@@ -23,7 +23,8 @@ NEW_CONTAINER_DEFINITIONS=$(echo "${TASK_DEF}" | jq \
       end
     )
   ')
-
+echo "CODEBUILD_RESOLVED_SOURCE_VERSION=${CODEBUILD_RESOLVED_SOURCE_VERSION:-NOT_SET}"
+echo "CODEBUILD_SOURCE_VERSION=${CODEBUILD_SOURCE_VERSION:-NOT_SET}"
 TASK_VERSION=$(aws ecs register-task-definition \
   --family "${TASK_DEFINITION}" \
   --container-definitions "${NEW_CONTAINER_DEFINITIONS}" \
