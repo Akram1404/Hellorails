@@ -12,7 +12,7 @@ TASK_DEF=$(aws ecs describe-task-definition \
 
 NEW_CONTAINER_DEFINITIONS=$(echo "${TASK_DEF}" | jq \
   --arg IMAGE "${IMAGE}" \
-  --arg CONTAINER_NAME "${CONTAINER_NAME}" \
+  --arg CONTAINER_NAME "${WORKER_CONTAINER_NAME}" \
   '
   .taskDefinition.containerDefinitions
   | map(
