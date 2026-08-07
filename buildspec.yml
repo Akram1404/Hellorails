@@ -38,5 +38,6 @@ phases:
     commands:
       - echo "Successfully finished build!!"
       - echo "Deploying worker..."
+      - cat worker-deploy.sh
       - bash worker-deploy.sh
       - echo "Successfully finished deploying worker"
