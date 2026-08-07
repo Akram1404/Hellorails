@@ -31,12 +31,12 @@ phases:
             --progress=plain \
             -t $WORKER_REPOSITORY_URI:latest \
             -t ${WORKER_REPOSITORY_URI}:${IMAGE_TAG} \
-            -f docker/staging/worker/dockerfile \
+            -f dockerfile \
             --output type=image,push=true .
 
   post_build:
     commands:
       - echo "Successfully finished build!!"
       - echo "Deploying worker..."
-      - bash docker/staging/worker/worker-deploy.sh
+      - bash worker-deploy.sh
       - echo "Successfully finished deploying worker"
