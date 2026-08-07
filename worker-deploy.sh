@@ -25,6 +25,10 @@ NEW_CONTAINER_DEFINITIONS=$(echo "${TASK_DEF}" | jq \
   ')
 echo "CODEBUILD_RESOLVED_SOURCE_VERSION=${CODEBUILD_RESOLVED_SOURCE_VERSION:-NOT_SET}"
 echo "CODEBUILD_SOURCE_VERSION=${CODEBUILD_SOURCE_VERSION:-NOT_SET}"
+
+COMMIT="${CODEBUILD_RESOLVED_SOURCE_VERSION:-manual}"
+BRANCH="${CODEBUILD_SOURCE_VERSION:-manual}"
+
 TASK_VERSION=$(aws ecs register-task-definition \
   --family "${TASK_DEFINITION}" \
   --container-definitions "${NEW_CONTAINER_DEFINITIONS}" \
@@ -33,8 +37,8 @@ TASK_VERSION=$(aws ecs register-task-definition \
   --network-mode bridge \
   --requires-compatibilities EC2 \
   --tags \
-    key=commit,value="${CODEBUILD_RESOLVED_SOURCE_VERSION}" \
-    key=branch_name,value="${CODEBUILD_SOURCE_VERSION}" \
+    key=commit,value="${COMMIT}" \
+    key=branch_name,value="${BRANCH}" \
   | jq -r '.taskDefinition.revision')
 
 echo "Registered ECS Task Definition Revision: ${TASK_VERSION}"
