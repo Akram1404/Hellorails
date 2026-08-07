@@ -31,7 +31,7 @@ phases:
             --progress=plain \
             -t $WORKER_REPOSITORY_URI:latest \
             -t ${WORKER_REPOSITORY_URI}:${IMAGE_TAG} \
-            -f dockerfile \
+            -f Dockerfile \
             --output type=image,push=true .
 
   post_build:
