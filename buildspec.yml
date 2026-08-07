@@ -1,30 +1,42 @@
 version: 0.2
 
-env:
-  variables:
-    AWS_REGION: ap-south-1
-    ECR_REPO: hellorails
-    IMAGE_TAG: latest
-
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 964685759880.dkr.ecr.$AWS_REGION.amazonaws.com
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+      - WORKER_REPOSITORY_URI=${WORKER_REPOSITORY_URI}
+      - aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+      - COMMIT_HASH="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
+      - echo "COMMIT_HASH=${COMMIT_HASH}"
+      - BUILD_NUM=${CODEBUILD_BUILD_NUMBER:-0}
+
+      - IMAGE_TAG="${COMMIT_HASH}-${BUILD_NUM}"
+
+      - echo "WORKER_REPOSITORY_URI=${WORKER_REPOSITORY_URI}"
+      - echo "IMAGE_TAG=${IMAGE_TAG}"
 
   build:
     commands:
       - echo Build started on `date`
-      - docker build -t $ECR_REPO:$IMAGE_TAG .
-      - docker tag $ECR_REPO:$IMAGE_TAG 964685759880.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+      - echo Building the Docker images...
+      - docker buildx create --use --name mybuilder
+      - docker buildx inspect --bootstrap
+      - |
+          docker buildx build --provenance=false \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --build-arg BUNDLE_PATHS=${BUNDLE_PATH} \
+            --cache-from type=registry,ref=$WORKER_REPOSITORY_URI:latest \
+            --progress=plain \
+            -t $WORKER_REPOSITORY_URI:latest \
+            -t ${WORKER_REPOSITORY_URI}:${IMAGE_TAG} \
+            -f docker/staging/worker/dockerfile \
+            --output type=image,push=true .
 
   post_build:
     commands:
-      - echo Pushing image to ECR...
-      - docker push 964685759880.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-      - printf '[{"name":"hellorails","imageUri":"%s"}]' 964685759880.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG > imagedefinitions.json
-
-artifacts:
-  files:
-    - imagedefinitions.json
+      - echo "Successfully finished build!!"
+      - echo "Deploying worker..."
+      - bash docker/staging/worker/worker-deploy.sh
+      - echo "Successfully finished deploying worker"
